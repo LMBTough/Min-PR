@@ -12,6 +12,7 @@ from foolbox import PyTorchModel
 from tqdm import tqdm
 from sigmoid_method import exp as sigmoid_exp
 from combine_method import exp as combine_exp
+from fvw_method import exp as fvw_exp
 from utils import setup_seed,AverageMeter
 setup_seed(3407)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -71,8 +72,10 @@ if __name__ == "__main__":
         def exp(x, delta_x, y): return sigmoid_exp(model, x, delta_x, y,
                                              steps=args.update_step, alpha=args.alpha, lbda=args.lbda, kind=2)
     elif args.method == "taylor" or args.method == "total*delta" or args.method == "total":
-        def exp(x, delta_x, y): return combine_exp(model, x, delta_x, y, add_steps=args.add_step,
-                                             minus_steps=args.minus_step, alpha=args.alpha, lambda_r=args.lbda, method=args.method)
+        # def exp(x, delta_x, y): return combine_exp(model, x, delta_x, y, add_steps=args.add_step,
+        #                                      minus_steps=args.minus_step, alpha=args.alpha, lambda_r=args.lbda, method=args.method)
+        def exp(x, delta_x, y): return fvw_exp(model, x, delta_x, y, add_steps=args.add_step,
+                                             minus_steps=args.minus_step, alpha=args.alpha, method=args.method)        
     count = 0
     pbar = tqdm(total=args.pic_num)
     avg = AverageMeter()
@@ -90,11 +93,11 @@ if __name__ == "__main__":
         success_y = adv_pred[success]
         for x, label, delta_x, y in zip(success_x, success_label, success_adv_data-success_x, success_y):
             delta_x_norm = torch.norm(delta_x)
-            try:
-                norm = exp(x=x, delta_x=delta_x, y=y)
-                avg.calculate(norm, delta_x_norm)
-            except:
-                continue
+            # try:
+            norm = exp(x=x, delta_x=delta_x, y=y)
+            avg.calculate(norm, delta_x_norm)
+            # except:
+            #     continue
             pbar.update(1)
             count += 1
             if count == args.pic_num:
