@@ -105,6 +105,6 @@ if __name__ == "__main__":
         if count == args.pic_num:
             break
     # print(avg.avg)
-    log_file = open("logs/{args.dataset}_{args.method}_{args.attack}.txt", "w")
+    log_file = open(f"logs/{args.dataset}_{args.method}_{args.attack}.txt", "w")
     log_file.write(str(avg.avg))
     log_file.close()
