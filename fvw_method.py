@@ -21,12 +21,10 @@ def update_total(total, grads_before, grads, alpha, op):
     return total
 
 
-def caculate_total(model, x, delta_x, y, steps=5, alpha=0.0025, op="add", num_classes=10):
+def caculate_total(model, x, label, delta_x, y, steps=5, alpha=0.0025, op="add", num_classes=10, use_label=False):
     total = None
     delta_x = delta_x.clone()
-    # loss_func = torch.nn.CrossEntropyLoss(reduction='sum')
     x.requires_grad_(False)
-    delta_x.requires_grad_(True)
     model.zero_grad()
     total_all_classes = list()
     class_weights = list()
@@ -39,14 +37,13 @@ def caculate_total(model, x, delta_x, y, steps=5, alpha=0.0025, op="add", num_cl
         delta_x_cls = torch.nn.Parameter(data=delta_x)
         for step in range(steps + 1):
             outputs = model(x + delta_x_cls)
-            # loss = loss_func(outputs, torch.LongTensor([class_]).to(outputs.device))
             if op == "minus":
-                loss = -outputs[:,class_]
+                loss = -outputs[:, class_]
                 loss.backward(retain_graph=True)
                 grad = delta_x_cls.grad
                 delta_x_cls = delta_x_cls - alpha * torch.sign(grad)
             elif op == "add":
-                loss = -outputs[:,class_]
+                loss = -outputs[:, class_]
                 loss.backward(retain_graph=True)
                 grad = delta_x_cls.grad
                 delta_x_cls = delta_x_cls + alpha * torch.sign(grad)
@@ -63,14 +60,20 @@ def caculate_total(model, x, delta_x, y, steps=5, alpha=0.0025, op="add", num_cl
         class_weight = end_loss - start_loss
         total_all_classes.append(total.cpu().detach().numpy())
         class_weights.append(class_weight)
-    # class_weights = np.abs(np.array(class_weights))
-    # total = np.array(total_all_classes)
-    # class_weights_ = np.array([-1/(num_classes-1)]*num_classes)
-    # class_weights_[y.argmax(-1)] = 1
-    # class_weights = class_weights_ / class_weights * F.softmax(y.squeeze(),dim=-1).cpu().detach().numpy()
-    # print(class_weights)
-    # total = np.average(total_all_classes,weights=class_weights,axis=0)
-    total = np.average(total_all_classes,axis=0)
+    class_weights = np.abs(np.array(class_weights))
+    total = np.array(total_all_classes)
+    class_weights_ = np.array([-1/(num_classes-1)]*num_classes)
+    if use_label:
+        class_weights_[label.argmax(-1)] = 1
+    else:
+        class_weights_[y.argmax(-1)] = 1
+    if use_label:
+        class_weights = class_weights_ / class_weights * \
+            F.softmax(outputs.squeeze(), dim=-1).cpu().detach().numpy()
+    else:
+        class_weights = class_weights_ / class_weights * \
+            F.softmax(y.squeeze(), dim=-1).cpu().detach().numpy()
+    total = np.average(total_all_classes, weights=class_weights, axis=0)
     total = torch.from_numpy(total).to(outputs.device)
     return total
 
@@ -80,7 +83,7 @@ def caculate_combine(total, delta, use_total=True, use_delta=True):
         combine = torch.abs(torch.abs(total) * delta)
     elif use_total:
         combine = torch.abs(total)
-    elif use_delta:  # taylor
+    elif use_delta:
         combine = torch.abs(delta)
     combine = combine.unsqueeze(0).cpu().detach().numpy()
     combine_flatten = combine.flatten()
@@ -117,19 +120,22 @@ def binary_search(model, x, delta, y, r, combine, combine_flatten, search_times=
     return flag, flag_norm, flag_delta
 
 
-def exp(model, x, delta_x, y, add_steps=5, minus_steps=0, alpha=0.0025, method="total*delta"):
-    if add_steps != 0:
-        total_add = caculate_total(
-            model, x.unsqueeze(0), delta_x.unsqueeze(0), y.unsqueeze(0), steps=add_steps, op="add", alpha=alpha, num_classes=y.shape[-1])
-    if minus_steps != 0:
-        total_minus = caculate_total(
-            model, x.unsqueeze(0), delta_x.unsqueeze(0), y.unsqueeze(0), steps=minus_steps, op="minus", alpha=alpha, num_classes=y.shape[-1])
-    if add_steps != 0 and minus_steps != 0:
-        total = total_add - total_minus
-    elif add_steps != 0:
-        total = total_add
-    elif minus_steps != 0:
-        total = total_minus
+def exp(model, x, label, delta_x, y, add_steps=5, minus_steps=0, alpha=0.0025, method="total*delta", use_label=False):
+    if method == "taylor":
+        total = None
+    else:
+        if add_steps != 0:
+            total_add = caculate_total(
+                model, x.unsqueeze(0), label.unsqueeze(0), delta_x.unsqueeze(0), y.unsqueeze(0), steps=add_steps, op="add", alpha=alpha, num_classes=y.shape[-1], use_label=use_label)
+        if minus_steps != 0:
+            total_minus = caculate_total(
+                model, x.unsqueeze(0), label.unsqueeze(0), delta_x.unsqueeze(0), y.unsqueeze(0), steps=minus_steps, op="minus", alpha=alpha, num_classes=y.shape[-1], use_label=use_label)
+        if add_steps != 0 and minus_steps != 0:
+            total = total_add - total_minus
+        elif add_steps != 0:
+            total = total_add
+        elif minus_steps != 0:
+            total = total_minus
     delta_x = delta_x.unsqueeze(0)
     if method == "total*delta":
         combine, combine_flatten = caculate_combine(
@@ -142,4 +148,4 @@ def exp(model, x, delta_x, y, add_steps=5, minus_steps=0, alpha=0.0025, method="
             total, delta_x, use_total=False, use_delta=True)
     _, flag_norm, flag_delta = binary_search(model, x.unsqueeze(0), delta_x, y, len(
         combine_flatten) - 1, combine, combine_flatten, search_times=10)
-    return flag_norm,flag_delta
+    return flag_norm, flag_delta
