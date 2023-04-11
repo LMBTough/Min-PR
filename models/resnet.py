@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -98,20 +99,20 @@ class ResNet(nn.Module):
 
 
 def resnet50(dataset="cifar10"):
-    if dataset == "cifar10":
-        num_classes = 10
-    elif dataset == "cifar100":
-        num_classes = 100
+    num_classes_dict = {"cifar10": 10, "cifar100": 100, "imagenet": 1000}
+    if dataset not in num_classes_dict:
+        raise ValueError("Unsupported dataset: {}".format(dataset))
+    num_classes = num_classes_dict[dataset]
+    if dataset == "imagenet":
+        model = torchvision.models.resnet50(num_classes=num_classes,pretrained=True)
     else:
-        raise NotImplementedError
-    model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes)
-    state_dict = torch.load(
-        f"weights/{dataset}_resnet50_weights.pth", map_location=device)
-    for key in list(state_dict.keys()):
-        if key.startswith('module.'):
-            state_dict[key[7:]] = state_dict[key]
-            del state_dict[key]
-    model.load_state_dict(state_dict)
-    model.to(device)
-    model.eval()
+        model = ResNet(Bottleneck, [3, 4, 6, 3], num_classes=num_classes)
+        weights_file = f"weights/{dataset}_resnet50_weights.pth"
+        state_dict = torch.load(weights_file, map_location=device)
+        for key in list(state_dict.keys()):
+            if key.startswith('module.'):
+                state_dict[key[7:]] = state_dict[key]
+                del state_dict[key]
+        model.load_state_dict(state_dict)
+    model.to(device).eval()
     return model
