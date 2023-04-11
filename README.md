@@ -1,6 +1,7 @@
-# Adversarial Attacks on Image Classification Models
+# Towards Minimising Perturbation Rate for Adversarial Machine Learning with Pruning
 
-This repository contains the code and instructions to reproduce the experiments in the paper "Adversarial Attacks on Image Classification Models".
+This repository contains the code and instructions to reproduce the experiments in the paper "Towards Minimising Perturbation Rate for
+Adversarial Machine Learning with Pruning".
 
 ## Requirements
 
