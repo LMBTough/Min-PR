@@ -1,3 +1,5 @@
+<div align="center">
+
 # Minimizing Perturbation Rates in Adversarial Machine Learning through Pruning Techniques
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
