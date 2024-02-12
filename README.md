@@ -1,6 +1,21 @@
 # Minimizing Perturbation Rates in Adversarial Machine Learning through Pruning Techniques
 
-This repository presents the implementation and experimental framework for the research conducted in the study "Minimizing Perturbation Rates in Adversarial Machine Learning through Pruning Techniques". Our work investigates the reduction of perturbation rates in adversarial examples by leveraging pruning algorithms, aiming to improve the robustness of deep neural networks against adversarial attacks.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Venue:ECMLPKDD 2023](https://img.shields.io/badge/Venue-ECML--PKDD%202023-007CFF)](https://2023.ecmlpkdd.org/)
+
+</div>
+<table align="center">
+  <tr>
+    <td align="center"> 
+      <img src="./images/Architecture_of_Min-PRv2.png" alt="Image 1" style="width: 700px;"/> 
+      <br>
+      <em style="font-size: 18px;">  <strong style="font-size: 18px;">Figure 1:</strong> Architecture of Min-PRv2.</em>
+    </td>
+  </tr>
+</table>
+
+
+This repository presents the implementation and experimental framework for the research conducted in the study [Minimizing Perturbation Rates in Adversarial Machine Learning through Pruning Techniques](https://link.springer.com/chapter/10.1007/978-3-031-43412-9_9). Our work investigates the reduction of perturbation rates in adversarial examples by leveraging pruning algorithms, aiming to improve the robustness of deep neural networks against adversarial attacks.
 
 ## Environment Setup
 
